@@ -1,2 +1,2 @@
-# map-tools
-QGIS plugin for little helper in map production
+# Map tools
+QGIS plugin for little helpers in map production
