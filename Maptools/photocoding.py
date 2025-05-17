@@ -14,7 +14,9 @@ from qgis.core import (
     QgsProcessingParameterField,
     QgsFeatureRequest,
     QgsProcessingParameterFolderDestination,
-    QgsProcessingParameterFile
+    QgsProcessingParameterFile,
+    QgsCoordinateTransform,
+    QgsCoordinateReferenceSystem
 )
 from qgis import processing
 import itertools
@@ -154,6 +156,9 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
         # Apply selection
         points = points.materialize(QgsFeatureRequest(), feedback)
 
+        # Get the CRS of the points layer
+        points_crs = points.sourceCrs()
+
         images_processed = 0
         images_referenced = 0
 
@@ -188,7 +193,16 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
                 request = QgsFeatureRequest().setFilterExpression(exp)
                 for matching_feature in points.getFeatures(request):
                     feedback.pushInfo(f"Match {file} with point {matching_feature.id()} at {taken.toString(Qt.DateFormat.DefaultLocaleLongDate)} ")
-                    point = matching_feature.geometry().asPoint()
+                    
+                    # Check if the point is in WGS84
+                    if points_crs == QgsCoordinateReferenceSystem("EPSG:4326"):
+                        point = matching_feature.geometry().asPoint()
+                    else:
+                        dest_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+                        transform = QgsCoordinateTransform(points_crs, dest_crs, context.transformContext())
+                        geom = matching_feature.geometry()
+                        geom.transform(transform)
+                        point = geom.asPoint()
 
                     src_path = os.path.join(folder_in, file)
                     dst_path = os.path.join(folder_out, file)
