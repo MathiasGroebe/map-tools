@@ -16,12 +16,14 @@
 
 import os.path
 from PyQt5.QtWidgets import QApplication
-from qgis.core import Qgis, QgsMapLayer, QgsRasterLayer, QgsProject, QgsCoordinateReferenceSystem
+from qgis.core import Qgis, QgsMapLayer, QgsRasterLayer, QgsProject, QgsCoordinateReferenceSystem, QgsApplication
 from qgis.gui import QgsMessageBar, QgsExtentWidget, QgsProjectionSelectionWidget
 from qgis.utils import iface
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QToolButton, QLabel, QFileDialog
 from qgis.PyQt.QtCore import QStandardPaths
+
+from .maptools_provider import MaptoolsAlgorithms
 
 
 class MapToolsPlugin:
@@ -33,7 +35,13 @@ class MapToolsPlugin:
         self.iface = iface
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
-        self.plugin_name = 'Map tools'
+        self.plugin_name = 'Maptools'
+
+    def initProcessing(self):
+        """Init Processing provider for QGIS >= 3.8."""
+        
+        self.provider = MaptoolsAlgorithms()
+        QgsApplication.processingRegistry().addProvider(self.provider)        
 
 
     def initGui(self):
@@ -107,16 +115,20 @@ class MapToolsPlugin:
         self.copyButton.clicked.connect(self.copyExtent)
         self.toolbar.addWidget(self.copyButton)
 
+        self.initProcessing()
+
     def updateExtentWidget(self):
         """Update QgsExtentWidget when map extent changes."""
         self.extentWidget.setCurrentExtent(self.iface.mapCanvas().extent(), QgsProject.instance().crs())
         self.extentWidget.update()
-        self.iface.messageBar().pushMessage(self.plugin_name, "Extent widget updated", level=Qgis.Info, duration=3)
+        # self.iface.messageBar().pushMessage(self.plugin_name, "Extent widget updated", level=Qgis.Info, duration=3)
         
         
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        self.toolbar.deleteLater()
+        del self.toolbar
+
+        QgsApplication.processingRegistry().removeProvider(self.provider)
 
     def reload(self):
         """Reload selected layer(s)."""

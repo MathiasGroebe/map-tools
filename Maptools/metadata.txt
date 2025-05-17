@@ -3,14 +3,14 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Map tools
-qgisMinimumVersion=3.0
+name=Maptools
+qgisMinimumVersion=3.34
 description=QGIS plugin for little helpers in map production
-version=0.1
+version=0.0.2
 author=Mathias Gröbe
 email=mathias.groebe@gmail.com
 
-about=Tools for producing maps
+about=Tools for producing maps, needs the exif package. Please install it with "!pip install exif" using the python console in QGIS
 
 tracker=https://github.com/MathiasGroebe/map-tools/issues
 repository=https://github.com/MathiasGroebe/map-tools/
@@ -23,7 +23,7 @@ hasProcessingProvider=no
 # changelog= first version
 
 # Tags are comma separated with spaces allowed
-tags=Python, PostGIS, Map Production
+tags=Python, PostGIS, Map Production, Photos, Correlation
 
 homepage=https://github.com/MathiasGroebe/map-tools/
 icon=icon.svg
