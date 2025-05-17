@@ -16,7 +16,8 @@ from qgis.core import (
     QgsProcessingParameterFolderDestination,
     QgsProcessingParameterFile,
     QgsCoordinateTransform,
-    QgsCoordinateReferenceSystem
+    QgsCoordinateReferenceSystem,
+    QgsPoint
 )
 from qgis import processing
 import itertools
@@ -35,6 +36,7 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
     POINTS = "POINTS"
     POINTS_TIMESTAMP = "POINTS_TIMESTAMP"
     OFFSET = "OFFSET"
+    ELEVATION_OFFSET = "ELEVATION_OFFSET"
     FOLDER_IN = "FOLDER_IN"
     FOLDER_OUT = "FOLDER_OUT"
 
@@ -108,6 +110,15 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterNumber(
+                "ELEVATION_OFFSET",
+                "Elevation offset in meters",
+                type=QgsProcessingParameterNumber.Double,
+                defaultValue=0
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterFile(
                 self.FOLDER_IN,
                 "Input folder with photos",
@@ -150,6 +161,7 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
         points = self.parameterAsSource(parameters, self.POINTS, context)
         points_timestamp_field = self.parameterAsString(parameters, self.POINTS_TIMESTAMP, context)
         offset = self.parameterAsInt(parameters, self.OFFSET, context)
+        elevation_offset = self.parameterAsDouble(parameters, self.ELEVATION_OFFSET, context)
         folder_in = self.parameterAsString(parameters, self.FOLDER_IN, context)
         folder_out = self.parameterAsString(parameters, self.FOLDER_OUT, context)
 
@@ -196,13 +208,14 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
                     
                     # Check if the point is in WGS84
                     if points_crs == QgsCoordinateReferenceSystem("EPSG:4326"):
-                        point = matching_feature.geometry().asPoint()
+                        point = matching_feature.geometry().constGet()
+                        
                     else:
                         dest_crs = QgsCoordinateReferenceSystem("EPSG:4326")
                         transform = QgsCoordinateTransform(points_crs, dest_crs, context.transformContext())
                         geom = matching_feature.geometry()
                         geom.transform(transform)
-                        point = geom.asPoint()
+                        point = geom.constGet()
 
                     src_path = os.path.join(folder_in, file)
                     dst_path = os.path.join(folder_out, file)
@@ -219,6 +232,11 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
                     out_image.gps_latitude_ref = lat_ref
                     out_image.gps_longitude = (lon_deg, lon_min, lon_sec)
                     out_image.gps_longitude_ref = lon_ref
+
+                    # If Z coordinate is available, set altitude
+                    if point.is3D():
+                        altitude = point.z() + elevation_offset
+                        out_image.gps_altitude = altitude
 
                     # Write updated EXIF back to file
                     with open(dst_path, "wb") as updated_image_file:
