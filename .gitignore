@@ -161,3 +161,4 @@ cython_debug/
 .vscode
 
 *.zip
+geocoding_sample.py

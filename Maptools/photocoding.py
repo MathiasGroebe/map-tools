@@ -25,7 +25,7 @@ from qgis.core import QgsProcessingParameterNumber
 
 class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
     """
-    Kodierung von Photos andhand eines Zeitstempels
+    Correlation of photos by timestamp.
     """
 
     # Constants used to refer to parameters and outputs. 
@@ -64,7 +64,14 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
 
     def shortHelpString(self):
 
-        return "Correlation of photos by timestamp."
+        file = os.path.join(os.path.dirname(__file__), "help_files", "photocoding.html")
+        print(file)
+        if not os.path.exists(file):
+            return "Correlation of photos by timestamp."
+        with open(file) as helpfile:
+            help = helpfile.read()
+        return help  
+
 
     def initAlgorithm(self, config: Optional[dict[str, Any]] = None):
         """
