@@ -99,12 +99,20 @@ class MapToolsPlugin:
         self.outputCrs = QgsCoordinateReferenceSystem.fromOgcWmsCrs("EPSG:4326")
         self.extentWidget.setOutputCrs(self.outputCrs)
         self.toolbar.addWidget(self.extentWidget)
+        self.iface.mapCanvas().extentsChanged.connect(self.updateExtentWidget)
 
         self.copyButton = QToolButton()
         self.copyButton.setText("Copy extent")
         self.copyButton.setToolTip("Copy extent xmin, ymin, xmax, ymax")
         self.copyButton.clicked.connect(self.copyExtent)
         self.toolbar.addWidget(self.copyButton)
+
+    def updateExtentWidget(self):
+        """Update QgsExtentWidget when map extent changes."""
+        self.extentWidget.setCurrentExtent(self.iface.mapCanvas().extent(), QgsProject.instance().crs())
+        self.extentWidget.update()
+        self.iface.messageBar().pushMessage(self.plugin_name, "Extent widget updated", level=Qgis.Info, duration=3)
+        
         
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
