@@ -126,7 +126,17 @@ class MapToolsPlugin:
         
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        del self.toolbar
+
+        self.iface.mapCanvas().extentsChanged.disconnect(self.updateExtentWidget)
+        self.reloadButton.clicked.disconnect(self.reload)
+        self.reopenButton.clicked.disconnect(self.reopen)
+        self.wktButton.clicked.disconnect(self.getWkt)
+        self.osmButton.clicked.disconnect(self.addOSM)
+        self.loadQmlButton.clicked.disconnect(self.loadQML)
+        self.saveQmlButton.clicked.disconnect(self.saveQML)
+        self.copyButton.clicked.disconnect(self.copyExtent)
+
+        self.iface.mainWindow().removeToolBar(self.toolbar)
 
         QgsApplication.processingRegistry().removeProvider(self.provider)
 
