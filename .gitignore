@@ -162,3 +162,4 @@ cython_debug/
 
 *.zip
 geocoding_sample.py
+test.py

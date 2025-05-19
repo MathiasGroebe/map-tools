@@ -1,8 +1,8 @@
-from re import L
-from typing import Any, Optional
+# -*- coding: utf-8 -*-
 
-from exif import Image
-from datetime import datetime
+from typing import Any, Optional
+import os
+import shutil
 from PyQt5.QtCore import QDateTime, Qt
 from qgis.core import (
 
@@ -17,14 +17,9 @@ from qgis.core import (
     QgsProcessingParameterFile,
     QgsCoordinateTransform,
     QgsCoordinateReferenceSystem,
-    QgsPoint
+    QgsExifTools,
+    QgsProcessingParameterNumber
 )
-from qgis import processing
-import itertools
-import math
-import os
-import shutil
-from qgis.core import QgsProcessingParameterNumber
 
 class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
     """
@@ -131,20 +126,7 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
                 self.FOLDER_OUT,
                 "Output folder for photos"
             )
-        )
-        
-       
-    def decimal_to_dms(self, value, is_latitude=True):
-        degrees = int(abs(value))
-        minutes_float = (abs(value) - degrees) * 60
-        minutes = int(minutes_float)
-        seconds = round((minutes_float - minutes) * 60, 2)
-        direction = ''
-        if is_latitude:
-            direction = 'N' if value >= 0 else 'S'
-        else:
-            direction = 'E' if value >= 0 else 'W'
-        return degrees, minutes, seconds, direction       
+        )    
 
     def processAlgorithm(
         self,
@@ -195,8 +177,8 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
                 continue
 
             with open(os.path.join(folder_in, file) , "rb") as image:
-                a_image = Image(image.read())
-                taken = QDateTime.fromString(a_image.datetime_original, "yyyy:MM:dd HH:mm:ss")
+
+                taken = QgsExifTools().readTag(os.path.join(folder_in, file), "Exif.Image.DateTime")
 
                 images_processed += 1
 
@@ -208,39 +190,26 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
                     
                     # Check if the point is in WGS84
                     if points_crs == QgsCoordinateReferenceSystem("EPSG:4326"):
-                        point = matching_feature.geometry().constGet()
+                        point = matching_feature.geometry().asPoint()
                         
                     else:
                         dest_crs = QgsCoordinateReferenceSystem("EPSG:4326")
                         transform = QgsCoordinateTransform(points_crs, dest_crs, context.transformContext())
                         geom = matching_feature.geometry()
                         geom.transform(transform)
-                        point = geom.constGet()
+                        point = geom.asPoint()
 
                     src_path = os.path.join(folder_in, file)
                     dst_path = os.path.join(folder_out, file)
                     shutil.copy2(src_path, dst_path)
 
-                    with open(dst_path, "rb") as out_image_file:
-                        out_image = Image(out_image_file.read())
-
-                    # Set GPS EXIF data
-                    lat_deg, lat_min, lat_sec, lat_ref = self.decimal_to_dms(point.y(), is_latitude=True)
-                    lon_deg, lon_min, lon_sec, lon_ref = self.decimal_to_dms(point.x(), is_latitude=False)
-
-                    out_image.gps_latitude = (lat_deg, lat_min, lat_sec)
-                    out_image.gps_latitude_ref = lat_ref
-                    out_image.gps_longitude = (lon_deg, lon_min, lon_sec)
-                    out_image.gps_longitude_ref = lon_ref
+                    # Write coordinates to the image
+                    QgsExifTools().geoTagImage(os.path.join(folder_out, file), point)
 
                     # If Z coordinate is available, set altitude
-                    if point.is3D():
-                        altitude = point.z() + elevation_offset
-                        out_image.gps_altitude = altitude
-
-                    # Write updated EXIF back to file
-                    with open(dst_path, "wb") as updated_image_file:
-                        updated_image_file.write(out_image.get_file())
+                    if matching_feature.geometry().constGet().is3D():
+                        altitude = matching_feature.geometry().constGet().z() + elevation_offset
+                        QgsExifTools().tagImage(os.path.join(folder_out, file), "Exif.GPSInfo.GPSAltitude", altitude)
 
                     images_referenced += 1
 
