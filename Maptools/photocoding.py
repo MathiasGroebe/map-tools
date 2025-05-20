@@ -5,7 +5,6 @@ import os
 import shutil
 from PyQt5.QtCore import QDateTime, Qt
 from qgis.core import (
-
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingContext,
@@ -64,7 +63,6 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
     def shortHelpString(self):
 
         file = os.path.join(os.path.dirname(__file__), "help_files", "photocoding.html")
-        print(file)
         if not os.path.exists(file):
             return "Correlation of photos by timestamp."
         with open(file) as helpfile:
@@ -178,7 +176,7 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
 
             with open(os.path.join(folder_in, file) , "rb") as image:
 
-                taken = QgsExifTools().readTag(os.path.join(folder_in, file), "Exif.Image.DateTime")
+                taken = QgsExifTools.readTag(os.path.join(folder_in, file), "Exif.Image.DateTime")
 
                 images_processed += 1
 
@@ -204,12 +202,12 @@ class PhotoCodingAlgorithm(QgsProcessingAlgorithm):
                     shutil.copy2(src_path, dst_path)
 
                     # Write coordinates to the image
-                    QgsExifTools().geoTagImage(os.path.join(folder_out, file), point)
+                    QgsExifTools.geoTagImage(os.path.join(folder_out, file), point)
 
                     # If Z coordinate is available, set altitude
                     if matching_feature.geometry().constGet().is3D():
                         altitude = matching_feature.geometry().constGet().z() + elevation_offset
-                        QgsExifTools().tagImage(os.path.join(folder_out, file), "Exif.GPSInfo.GPSAltitude", altitude)
+                        QgsExifTools.tagImage(os.path.join(folder_out, file), "Exif.GPSInfo.GPSAltitude", altitude)
 
                     images_referenced += 1
 
