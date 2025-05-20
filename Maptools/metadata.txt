@@ -6,11 +6,11 @@
 name=Maptools
 qgisMinimumVersion=3.34
 description=QGIS plugin for little helpers in map production
-version=0.0.2
+version=0.2.0
 author=Mathias Gröbe
 email=mathias.groebe@gmail.com
 
-about=Tools for producing maps, needs the exif package. Please install it with "!pip install exif" using the python console in QGIS
+about=Tools for producing maps.
 
 tracker=https://github.com/MathiasGroebe/map-tools/issues
 repository=https://github.com/MathiasGroebe/map-tools/
